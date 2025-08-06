@@ -185,6 +185,7 @@ class AddressSalaryService():
     city= coalesce(excluded.city, address.city),
     country= coalesce(excluded.country, address.country),
     updated_at = now()
+    returning *
 '''
     )
 
@@ -199,36 +200,51 @@ class AddressSalaryService():
     address_id = coalesce(excluded.address_id, salary.address_id),
     amount = coalesce(excluded.amount, salary.amount),
     updated_at = now()
+    returning *
 '''
     )
 
+    @staticmethod
+    def update(addressId: int, salaryId: int, data: dict) -> tuple[dict, dict]:
+        try:
+            with db.session.begin():
+                add_res = db.session.execute(
+                    AddressSalaryService._edit_addr,
+                    {
+                        "id": addressId,
+                        "jobId": data['jobId'],
+                        "street": data['street'],
+                        "city": data['city'],
+                        "country": data['country']
+                    }
+                    )
+                upd_add = add_res.mappings().first()
 
-@staticmethod
-def update(addressId: int, salaryId: int, data: dict) -> tuple[dict, dict]:
-    try:
-        with db.session.begin():
-            add_res = db.session.execute(
-                AddressSalaryService._edit_addr,
-                {
-                    "id": addressId,
-                    "jobId": data['jobId'],
-                    "street": data['street'],
-                    "city": data['city'],
-                    "country": data['country']
-                 }
+                checkLink = text(
+                    '''
+                        select 1 from salary where id=:salaryId and
+                        address_id = :addressId
+                    '''
                 )
-            upd_add = add_res.mappings().first()
 
-            sala_res = db.session.execute(
-                AddressSalaryService._edit_salary,
-                {
-                    "id": salaryId,
-                    "addressId": addressId,
-                    "amount": data['amount']
-                }
-            )
-            upd_sal = sala_res.mappings().first()
+                check = db.session.execute(checkLink, {
+                    "salaryId": salaryId,
+                    "addressId": addressId
+                    })
 
-            return upd_add, upd_sal
-    except IntegrityError:
-        raise
+                if check.first() is None:
+                    raise LookupError(f"Salary row with id={id} doesn't exist")
+
+                sala_res = db.session.execute(
+                    AddressSalaryService._edit_salary,
+                    {
+                        "id": salaryId,
+                        "addressId": addressId,
+                        "amount": data['amount']
+                    }
+                )
+                upd_sal = sala_res.mappings().first()
+
+                return upd_add, upd_sal
+        except IntegrityError:
+            raise

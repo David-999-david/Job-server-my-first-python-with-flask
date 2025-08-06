@@ -101,3 +101,55 @@ def getAll(jobId):
             "data": dict(results),
             "total": len(dict(results))
         })
+
+
+@addr_sal_bp.route('/adre&sal/<int:addressId>/<int:salaryId>/',
+                   methods=['PUT'])
+def update(addressId, salaryId):
+
+    schema = AddressSalarySchema()
+
+    try:
+        payload = schema.load(request.get_json() or {}, partial=True)
+    except ValidationError as e:
+        return jsonify({
+            "error": "Schema error when update address and salary",
+            "message": e.messages
+        }), 400
+
+    try:
+        add_res, sal_res = AddressSalaryService().update(
+            addressId=addressId,
+            salaryId=salaryId,
+            data=payload
+            )
+    except LookupError as e:
+        current_app.logger.error(e)
+        return jsonify({
+            "error": "Not Found!",
+            "detail": str(e)
+        }), 404
+    except IntegrityError as e:
+        current_app.logger.error(e._message)
+        return jsonify({
+            "error": "Integrity when update in address salary",
+            "detail": str(e.orig)
+        }), 400
+    except DatabaseError as e:
+        current_app.logger.error(e)
+        return jsonify({
+            "error": "Database Error when update in address salary",
+            "detail": str(e.orig)
+        }), 500
+
+    updatedAddress = serizliDict(dict(add_res))
+    updatedSalary = serizliDict(dict(sal_res))
+
+    return jsonify({
+        "error": False,
+        "success": True,
+        "data": {
+            "updatedAddress": updatedAddress,
+            "updatedSalary": updatedSalary
+        }
+    }), 203

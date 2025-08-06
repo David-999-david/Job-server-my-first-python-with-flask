@@ -3,6 +3,7 @@ import os
 from app.extensions import db, migrate
 from .routes.job import job_bp
 from app.routes.addre_salary import addr_sal_bp
+from app.routes.requirement import requirement_bp
 
 
 def create_app():
@@ -26,5 +27,6 @@ def create_app():
 
     app.register_blueprint(job_bp)
     app.register_blueprint(addr_sal_bp)
+    app.register_blueprint(requirement_bp)
 
     return app

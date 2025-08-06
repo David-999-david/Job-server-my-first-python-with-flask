@@ -62,20 +62,32 @@ class AddressSalaryService():
     j.name as "jobName",
     j.called_at as "calledAt",
     coalesce(
-    jsonb_agg(
+    (
+    select jsonb_agg(
     jsonb_build_object(
     'addressId', a.id,
     'street', a.street,
     'city', a.city,
     'country', a.country,
-    'amount', s.amount
+    'amount', s.amount,
+    'requirements', coalesce(
+    (
+    select jsonb_agg(
+    jsonb_build_object(
+    'requirementId',r.id,
+    'requirement',r.name
     )
-    ) filter (where a.id is not null),
-    '[]'
+    ) from requirement as r
+    where r.job_id = j.id
+    ), '[]'::jsonb
+    )
+    )
+    ) from address as a
+    left join salary as s on s.address_id = a.id
+    where a.job_id = j.id
+    ), '[]'::jsonb
     ) as links
     from job as j
-    left join address as a on a.job_id = j.id
-    left join salary as s on s.address_id = a.id
     where j.id = :jobId
     group by j.id, j.name, j.called_at;
 '''
@@ -88,23 +100,47 @@ class AddressSalaryService():
     j.name as "jobName",
     j.called_at as "calledAt",
     coalesce(
-    jsonb_agg(
+    (
+    select jsonb_agg(
     jsonb_build_object(
-    'addressId', a.id,
+    'addressId',a.id,
     'street', a.street,
     'city', a.city,
     'country', a.country,
-    'amount', s.amount
+    'amount', s.amount,
+    'requirements', coalesce(
+    (
+    select jsonb_agg(
+    jsonb_build_object(
+    'requirementId',r.id,
+    'requirement',r.name
     )
-    ) filter (where a.id is not null),
-    '[]'
+    ) from requirement as r
+    where r.address_id = a.id
+    ), '[]'::jsonb
+    )
+    )
+    ) from address as a
+    left join salary as s on s.address_id = a.id
+    where a.job_id = j.id
+    ), '[]'::jsonb
     ) as links
     from job as j
-    left join address as a on a.job_id = j.id
-    left join salary as s on s.address_id = a.id
-    group by j.id, j.name, j.called_at;
+    group by j.id, j.name, j.called_at
 '''
     )
+
+    # coalesce(
+    # (
+    # select jsonb_agg(
+    # jsonb_build_object(
+    # 'requirementId',r.id,
+    # 'requirement',r.name
+    # )
+    # ) from requirement as r
+    # where r.job_id=j.id
+    # ), '[]'::jsonb
+    # ) as requirements
 
     _link_search_sql = text(
         '''
@@ -123,7 +159,7 @@ class AddressSalaryService():
     )
     ) filter (where a.id is not null),
     '[]'
-    ) as links
+    ) as "links"
     from job as j
     left join address as a on a.job_id = j.id
     left join salary as s on s.address_id = a.id

@@ -47,6 +47,11 @@ class Address(db.Model):
         cascade='all, delete-orphan'
         )
 
+    requirements = db.relationship(
+        'Requirement', back_populates='address',
+        cascade='all, delete-orphan'
+    )
+
     job = db.relationship(
         'Job', back_populates='addresses'
     )
@@ -86,7 +91,12 @@ class Requirement(db.Model):
     job_id = db.Column(
         db.Integer,
         db.ForeignKey('job.id', ondelete='cascade'),
-        nullable=True
+        nullable=False
+    )
+    address_id = db.Column(
+        db.Integer,
+        db.ForeignKey('address.id', ondelete='cascade'),
+        nullable=False
     )
     name = db.Column(
         db.Text,
@@ -102,3 +112,7 @@ class Requirement(db.Model):
     )
 
     job = db.relationship('Job', back_populates='requirements')
+
+    address = db.relationship(
+        'Address', back_populates='requirements'
+    )

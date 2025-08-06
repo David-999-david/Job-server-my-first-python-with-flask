@@ -139,3 +139,26 @@ class RequirementService():
                 return update_res.mappings().first()
         except IntegrityError:
             raise
+
+    delete_sql = text(
+        '''
+    delete from requirement
+    where id = any(:ids)
+'''
+    )
+
+    @staticmethod
+    def deleteMany(ids: list[int]) -> int:
+
+        try:
+            with db.session.begin():
+                result = db.session.execute(
+                    RequirementService.delete_sql,
+                    {"ids": ids})
+                if result.rowcount == 0:
+                    raise LookupError(
+                        "Delete many requirement rows not success!"
+                    )
+                return result.rowcount
+        except IntegrityError:
+            raise

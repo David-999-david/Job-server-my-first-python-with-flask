@@ -125,3 +125,38 @@ def update(id):
         "success": True,
         "data": new_require
     })
+
+
+@requirement_bp.route('', methods=['DELETE'])
+def delete_many():
+    data = request.get_json() or {}
+    ids = data.get('ids')
+
+    if not isinstance(ids, list) or not all(isinstance(i, int) for i in ids):
+        return jsonify({
+            "error": "The ids is not valid of list"
+        }), 400
+    try:
+        result = RequirementService().deleteMany(ids=ids)
+    except LookupError as e:
+        current_app.logger.error(str(e))
+        return jsonify({
+            "error": str(e)
+        })
+    except IntegrityError as e:
+        current_app.logger.error(str(e))
+        return jsonify({
+            "error": "Integrity error when delete many requirements",
+            "detail": str(e.orig)
+        })
+    except DatabaseError as e:
+        current_app.logger.error(str(e))
+        return jsonify({
+            "error": "DateBase error when delete many requirements",
+            "detail": str(e.orig)
+        })
+    return jsonify({
+        "error": False,
+        "success": True,
+        "deleteCount": result
+    }), 200

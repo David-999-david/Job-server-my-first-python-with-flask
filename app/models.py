@@ -1,4 +1,28 @@
 from .extensions import db
+import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID
+
+
+class Users(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(UUID(as_uuid=True),
+                   primary_key=True,
+                   server_default=sa.text('gen_random_uuid()')
+                   )
+    name = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), nullable=False, unique=True)
+    phone = db.Column(db.Text, nullable=True)
+    password_hash = db.Column(db.Text, nullable=False)
+    email_verified = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now()
+        )
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now()
+    )
 
 
 class Job(db.Model):

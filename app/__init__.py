@@ -1,10 +1,11 @@
 from flask import Flask
 import os
-from app.extensions import db, migrate
+from app.extensions import db, init_extensions
 from .routes.job import job_bp
 from app.routes.addre_salary import addr_sal_bp
 from app.routes.requirement import requirement_bp
 from app.routes.worker import worker_bp
+from app.routes.user_auth import auth_bp
 
 
 def create_app():
@@ -17,9 +18,7 @@ def create_app():
     else:
         app.config.from_object("config.Test")
 
-    db.init_app(app)
-
-    migrate.init_app(app, db)
+    init_extensions(app=app)
 
     if env == "development":
         with app.app_context():
@@ -30,5 +29,6 @@ def create_app():
     app.register_blueprint(addr_sal_bp)
     app.register_blueprint(requirement_bp)
     app.register_blueprint(worker_bp)
+    app.register_blueprint(auth_bp)
 
     return app

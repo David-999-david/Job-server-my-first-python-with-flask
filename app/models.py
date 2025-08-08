@@ -22,6 +22,12 @@ class Job(db.Model):
         cascade='all, delete-orphan'
     )
 
+    workers = db.relationship(
+        'Worker',
+        secondary='job_worker',
+        back_populates='job',
+    )
+
 
 class Address(db.Model):
     __tablename__ = 'address'
@@ -115,4 +121,66 @@ class Requirement(db.Model):
 
     address = db.relationship(
         'Address', back_populates='requirements'
+    )
+
+
+class Worker(db.Model):
+    __tablename__ = 'workers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), nullable=True)
+    phone = db.Column(db.String(30), nullable=False)
+    hired_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now()
+    )
+    fired_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    job = db.relationship(
+        'Job',
+        secondary='job_worker',
+        back_populates='workers'
+    )
+
+    job_worker = db.relationship(
+        'Job_Worker',
+        back_populates='workers',
+        cascade='all, delete-orphan'
+    )
+
+
+class Job_Worker(db.Model):
+    __tablename__ = 'job_worker'
+
+    job_id = db.Column(
+        db.Integer,
+        db.ForeignKey('job.id', ondelete='cascade'),
+        nullable=False
+    )
+    worker_id = db.Column(
+        db.Integer,
+        db.ForeignKey('workers.id', ondelete='cascade'),
+        nullable=False
+    )
+    salary = db.Column(
+        db.Numeric(12, 2),
+        nullable=False
+    )
+    assigned_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now()
+    )
+
+    job = db.relationship(
+        'Job',
+        back_populates='job_worker'
+    )
+
+    workers = db.relationship(
+        'Worker',
+        back_populates='job_worker'
     )

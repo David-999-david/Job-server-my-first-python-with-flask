@@ -1,6 +1,6 @@
 from flask import request, Blueprint, current_app, jsonify
 from sqlalchemy.exc import IntegrityError, DatabaseError
-from app.schema.bulk_requirement_schema import BulkRequirementSchema
+from app.schema.bulk_requirement_schema import make_bulk_schema
 from marshmallow import ValidationError
 from app.services.requirement_service import RequirementService
 from app.serializers import serizliDict
@@ -50,7 +50,7 @@ requirement_bp = Blueprint('requirement', __name__, url_prefix='/requirements')
 def createMany():
 
     try:
-        payload = BulkRequirementSchema().load(
+        payload = make_bulk_schema(RequirementSchema).load(
             request.get_json(silent=True) or {})
     except ValidationError as e:
         return jsonify({

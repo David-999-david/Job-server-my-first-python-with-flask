@@ -3,6 +3,8 @@ import app.extensions as extensions
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash
+from flask_jwt_extended import create_access_token, create_refresh_token
 # from itsdangerous import SignatureExpired, BadSignature
 
 
@@ -75,5 +77,56 @@ class AuthService():
                         f'Failed when make user with id{userId}'
                         'for email verified'
                     )
+        except IntegrityError:
+            raise
+
+    login_sql = text(
+        '''select * from users
+           where email = :email
+           limit 1
+        '''
+    )
+
+    @staticmethod
+    def login(data: dict) -> tuple[str, str]:
+        try:
+            with db.session.begin():
+                row = db.session.execute(
+                    AuthService.login_sql,
+                    {"email": data['email']}
+                )
+                if row is None:
+                    print("[LOGIN] No user found")
+                    raise LookupError(
+                        "User not found!"
+                    )
+                user = row.mappings().first()
+
+                print("[LOGIN] Found user:", {user["id"]})
+
+                if user['email_verified'] == 'false':
+                    print("[LOGIN] Email not verified")
+                    raise LookupError(
+                        "Current user email not verified!"
+                    )
+                print("[LOGIN] Email verified OK")
+
+                check = check_password_hash(
+                    user['password_hash'], data['password'])
+
+                if not check:
+                    print("[LOGIN] Wrong password")
+                    raise LookupError(
+                        "Wrong Password"
+                    )
+                print("[LOGIN] Password OK")
+
+                userId = user['id']
+
+                access = create_access_token(identity=userId)
+
+                refresh = create_refresh_token(identity=userId)
+                print("[LOGIN] Tokens created successfully")
+                return access, refresh
         except IntegrityError:
             raise

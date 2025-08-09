@@ -1,20 +1,23 @@
 from app.extensions import mail
 from flask import Blueprint, request, jsonify, url_for, current_app
+from flask import make_response
 from flask_mail import Message
 # from werkzeug.security import check_password_hash
 from itsdangerous import SignatureExpired, BadSignature
-from app.schema.auth import AuthSchema
+from app.schema.auth import RegisterSchema, LoginSchema
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.services.user_auth import AuthService
+from flask_jwt_extended import set_access_cookies, set_refresh_cookies
+
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
-@auth_bp.route('', methods=['POST'])
+@auth_bp.route('/register', methods=['POST'])
 def register():
     try:
-        payload = AuthSchema().load(request.get_json() or {})
+        payload = RegisterSchema().load(request.get_json() or {})
     except ValidationError as e:
         current_app.logger.error(e.messages)
         return jsonify({
@@ -93,3 +96,76 @@ def confirm_email(token):
         "error": False,
         "success": True
     }), 200
+
+
+@auth_bp.route('/web/login', methods=['POST'])
+def login_web():
+    try:
+        payload = LoginSchema().load(request.get_json() or {})
+    except ValidationError as e:
+        current_app.logger.error(e.messages)
+        return jsonify({
+            "error": e.messages
+        }), 400
+    try:
+        access, refresh = AuthService().login(payload)
+    except LookupError as e:
+        current_app.logger.info(e)
+        return jsonify({
+            "detail": str(e)
+        }), 404
+    except IntegrityError as e:
+        current_app.logger.error(e)
+        return jsonify({
+            "error": "Integrity error when login",
+            "detail": str(e.orig)
+        }), 400
+    except DatabaseError as e:
+        current_app.logger.error(e)
+        return jsonify({
+            "error": "Database error when login",
+            "detail": str(e.orig)
+        }), 500
+    response = make_response(jsonify({"message": "Login"}), 200)
+
+    set_access_cookies(response, access)
+    set_refresh_cookies(response, refresh)
+
+    return response
+
+
+@auth_bp.route('/mobile/login', methods=['POST'])
+def login_mobile():
+    try:
+        payload = LoginSchema().load(request.get_json() or {})
+    except ValidationError as e:
+        current_app.logger.error(e.messages)
+        return jsonify({
+            "error": e.messages
+        }), 400
+    try:
+        access, refresh = AuthService().login(payload)
+    except LookupError as e:
+        current_app.logger.info(e)
+        return jsonify({
+            "detail": str(e)
+        }), 404
+    except IntegrityError as e:
+        current_app.logger.error(e)
+        return jsonify({
+            "error": "Integrity error when login",
+            "detail": str(e.orig)
+        }), 400
+    except DatabaseError as e:
+        current_app.logger.error(e)
+        return jsonify({
+            "error": "Database error when login",
+            "detail": str(e.orig)
+        }), 500
+
+    return jsonify({
+        "error": False,
+        "success": True,
+        "access": access,
+        "refresh": refresh
+    })

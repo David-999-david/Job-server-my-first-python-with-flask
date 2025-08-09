@@ -5,7 +5,7 @@ import re
 E164 = re.compile(r"^\+?[1-9]\d{1,14}$")
 
 
-class AuthSchema(Schema):
+class RegisterSchema(Schema):
     class Meta:
         unknown = EXCLUDE
 
@@ -18,7 +18,7 @@ class AuthSchema(Schema):
     )
     phone = fields.String(
         required=False,
-        validate=validate.Length(min=10)
+        allow_none=True
     )
     password = fields.String(
         required=True,
@@ -32,6 +32,8 @@ class AuthSchema(Schema):
                 data[k] = data[k].strip()
         if "email" in data and isinstance(data["email"], str):
             data["email"] = data["email"].lower()
+        if data.get('phone') in ('', None):
+            data['phone'] = None
         return data
 
     @validates("phone")
@@ -40,3 +42,26 @@ class AuthSchema(Schema):
             return
         if not E164.match(value):
             raise ValidationError("Phone must be E164 disign")
+
+
+class LoginSchema(Schema):
+    class Meta:
+        unknown = EXCLUDE
+
+    email = fields.Email(
+        required=True,
+    )
+
+    password = fields.String(
+        required=True,
+        validate=validate.Length(min=8)
+    )
+
+    @pre_load
+    def Strip_and_normalize(self, data, **kwargs):
+        for k in ("email", "password"):
+            if k in data and isinstance(data[k], str):
+                data[k] = data[k].strip()
+        if "email" in data and isinstance(data['email'], str):
+            data['email'] = data['email'].lower()
+        return data

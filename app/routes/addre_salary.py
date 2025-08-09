@@ -4,6 +4,7 @@ from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.services.address_salary_service import AddressSalaryService
 from app.serializers import serizliDict
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 addr_sal_bp = Blueprint("addr_sala", __name__, url_prefix='/jobs')
 
@@ -56,9 +57,12 @@ def create():
     }), 201
 
 
-@addr_sal_bp.route('/adre&sal', defaults={'jobId': None}, methods=['GET'])
-@addr_sal_bp.route('/<int:jobId>/adre&sal', methods=['GET'])
+@addr_sal_bp.route('/adre-sal', defaults={'jobId': None}, methods=['GET'])
+@addr_sal_bp.route('/<int:jobId>/adre-sal', methods=['GET'])
+@jwt_required()
 def getAll(jobId):
+    get_jwt_identity()
+
     query = request.args.get('q', '').strip()
 
     try:

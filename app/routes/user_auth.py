@@ -9,6 +9,10 @@ from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.services.user_auth import AuthService
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
+from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import decode_token, get_jwt_identity
+from flask_jwt_extended import jwt_required
+from datetime import datetime, timezone
 
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -162,10 +166,45 @@ def login_mobile():
             "error": "Database error when login",
             "detail": str(e.orig)
         }), 500
+    decoder = decode_token(access)
+
+    jit = decoder['jti']
+    exp = decoder['exp']
+    expired_at = datetime.fromtimestamp(exp, tz=timezone.utc)
 
     return jsonify({
         "error": False,
         "success": True,
         "access": access,
-        "refresh": refresh
+        "refresh": refresh,
+        "jit": jit,
+        "exp": exp,
+        "expired_at": expired_at
+    })
+
+
+@auth_bp.route('/web/refresh', methods=['POST'])
+@jwt_required(refresh=True, locations=['cookies'])
+def refresh_web():
+    uuid = get_jwt_identity()
+    access = create_access_token(identity=uuid)
+    refresh = create_refresh_token(identity=uuid)
+    response = make_response(jsonify({"message": "Refresh success"}), 200)
+    set_access_cookies(response, access)
+    set_refresh_cookies(response, refresh)
+    return response
+
+
+@auth_bp.route('/mobile/refresh', methods=['POST'])
+@jwt_required(refresh=True, locations=['headers'])
+def refresh_mobile():
+    uuid = get_jwt_identity()
+    access = create_access_token(identity=uuid)
+    refresh = create_refresh_token(identity=uuid)
+
+    return jsonify({
+        "error": False,
+        "success": True,
+        "newAccess": access,
+        "newRefresh": refresh
     })

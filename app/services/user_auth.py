@@ -6,8 +6,10 @@ from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token
 # from itsdangerous import SignatureExpired, BadSignature
-from app.security.otp import generate_random, hash_code, utcnow
-from datetime import timedelta
+from app.security.otp import generate_random, hash_code, utcnow, compare_otp
+from datetime import timedelta, datetime, timezone
+from werkzeug.exceptions import BadRequest, NotFound
+from flask_jwt_extended import decode_token
 
 
 class AuthService():
@@ -185,3 +187,98 @@ class AuthService():
 
         except IntegrityError:
             raise
+
+    check_user = text(
+        '''select id from users
+           where email = :email
+        '''
+    )
+
+    get_otp = text(
+        '''select id,hash_otp, expired_at
+           from otp_codes
+           where user_id=:userId
+           and used = false
+           limit 1
+        '''
+    )
+
+    update_otp = text(
+        '''update otp_codes
+           set used = true
+           where id = :otpId and used=false
+        '''
+    )
+
+    @staticmethod
+    def verify_otp(email: str, otp: str) -> str:
+        with db.session.begin():
+            row = db.session.execute(
+                AuthService.check_user,
+                {"email": email}
+            ).first()
+            if row is None:
+                raise NotFound("User not found")
+            userId = row[0]
+            otp_row = db.session.execute(
+                AuthService.get_otp,
+                {"userId": userId}
+            ).mappings().first()
+            if otp_row is None:
+                raise BadRequest("Can't find otp with current user")
+            databaseOtp = otp_row['hash_otp']
+            expired = otp_row['expired_at']
+            if expired <= datetime.now(timezone.utc):
+                raise BadRequest("Otp is expired")
+            check = compare_otp(otp, databaseOtp)
+            if not check:
+                raise BadRequest("Otp is wrong")
+            res = db.session.execute(
+                AuthService.update_otp,
+                {"otpId": otp_row['id']}
+            )
+            if res.rowcount != 1:
+                raise BadRequest("Failed for make current otp to used")
+            claims = {"scope": "password-reset", "otp_id": otp_row['id']}
+            reset_token = create_access_token(
+                identity=userId,
+                additional_claims=claims
+                )
+            return reset_token
+
+    user_sql = text(
+        '''select 1 from users
+            where id = :id
+        '''
+    )
+
+    change_psw_sql = text(
+        '''update users
+            set password_hash=:hashed
+            where id=:userId
+        '''
+    )
+
+    @staticmethod
+    def reset_password(token: str, password: str):
+        if token is None:
+            raise NotFound('Reset Token is missing')
+        decode = decode_token(token)
+        userId = decode['sub']
+        with db.session.begin():
+            check = db.session.execute(
+                AuthService.user_sql,
+                {"id": userId}
+            ).first()
+            if check is None:
+                raise NotFound("User not found")
+            hashed_psw = generate_password_hash(password, salt_length=16)
+            user_res = db.session.execute(
+                AuthService.change_psw_sql,
+                {
+                    "hashed": hashed_psw,
+                    "userId": userId
+                }
+            )
+            if user_res.rowcount != 1:
+                raise BadRequest("Failed to changed password")

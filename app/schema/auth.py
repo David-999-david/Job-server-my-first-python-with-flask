@@ -79,3 +79,33 @@ class EmailOnlySchema(Schema):
         if isinstance(data['email'], str):
             data['email'] = data['email'].strip().lower()
         return data
+
+
+class OtpSchema(Schema):
+    class Meta:
+        unknown = EXCLUDE
+    email = fields.Email(
+        required=True,
+    )
+    otp = fields.String(
+        required=True,
+        validate=validate.Length(min=6)
+    )
+
+    @pre_load
+    def strip_normalize(self, data, **kwargs):
+        if isinstance(data['email'], str):
+            data['email'] = data['email'].strip().lower()
+        return data
+
+
+class reset_password_shcema(Schema):
+    class Meta:
+        unknown = EXCLUDE
+    reset_token = fields.String(
+        required=True
+    )
+    new_password = fields.String(
+        required=True,
+        validate=validate.Length(min=8)
+    )

@@ -5,6 +5,7 @@ from flask_mail import Message
 # from werkzeug.security import check_password_hash
 from itsdangerous import SignatureExpired, BadSignature
 from app.schema.auth import RegisterSchema, LoginSchema, EmailOnlySchema
+from app.schema.auth import OtpSchema, reset_password_shcema
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.services.user_auth import AuthService
@@ -52,7 +53,7 @@ def register():
             _external=True
             )
     message = "Email Verify Link"
-    message_body = f"Please clik on link {user.name} " \
+    message_body = f"Please click on link {user.name} " \
                    "for verify you eamil and" \
                    f" wait for regiseter success {confirm_url}"
     sendMessage = Message(message, body=message_body,
@@ -268,3 +269,28 @@ def check_email():
     return jsonify({
         "message": "Please check your email for get otp"
     }), 200
+
+
+@auth_bp.route('/check-otp', methods=['POST'])
+def check_otp():
+    payload = OtpSchema().load(request.get_json() or {})
+    resetToken = AuthService().verify_otp(payload['email'], payload['otp'])
+    return jsonify({
+        "error": False,
+        "success": True,
+        "resetToken": resetToken
+    })
+
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    payload = reset_password_shcema().load(
+        request.get_json() or {}
+    )
+    AuthService().reset_password(payload['reset_token'],
+                                 payload['new_password'])
+    return jsonify({
+        "error": False,
+        "success": True,
+        "message": "Change password successfully"
+    })

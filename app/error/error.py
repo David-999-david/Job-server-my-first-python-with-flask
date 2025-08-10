@@ -40,7 +40,8 @@ def register_error_handler(app):
     def on_database(e):
         current_app.logger.exception(e)
         return jsonify(
-            error="DataBase Error"
+            error="DataBase Error",
+            detail=str(e)
         ), 500
 
     @app.errorhandler(IntegrityError)

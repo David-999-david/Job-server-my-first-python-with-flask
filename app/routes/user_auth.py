@@ -1,10 +1,10 @@
-from app.extensions import mail
+from app.extensions import mail, limiter
 from flask import Blueprint, request, jsonify, url_for, current_app
 from flask import make_response
 from flask_mail import Message
 # from werkzeug.security import check_password_hash
 from itsdangerous import SignatureExpired, BadSignature
-from app.schema.auth import RegisterSchema, LoginSchema
+from app.schema.auth import RegisterSchema, LoginSchema, EmailOnlySchema
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError, DatabaseError
 from app.services.user_auth import AuthService
@@ -130,7 +130,7 @@ def login_web():
             "error": "Database error when login",
             "detail": str(e.orig)
         }), 500
-    response = make_response(jsonify({"message": "Login"}), 200)
+    response = make_response(jsonify({"message": "Login success"}), 200)
 
     set_access_cookies(response, access)
     set_refresh_cookies(response, refresh)
@@ -176,6 +176,7 @@ def login_mobile():
         "error": False,
         "success": True,
         "access": access,
+        "message": "Successfully Login",
         "refresh": refresh,
         "jit": jit,
         "exp": exp,
@@ -208,3 +209,62 @@ def refresh_mobile():
         "newAccess": access,
         "newRefresh": refresh
     })
+
+
+@auth_bp.route('/check-email', methods=['POST'])
+@limiter.limit("2/minute")
+def check_email():
+    try:
+        payload = EmailOnlySchema().load(
+            request.get_json() or {}
+        )
+    except ValidationError as e:
+        current_app.logger.error(e.messages)
+        return jsonify({
+            "error": e.messages
+        }), 400
+    try:
+        code, userId = AuthService().check_email(
+            payload['email']
+        )
+    except LookupError as e:
+        current_app.logger.error(e)
+        return jsonify({
+            "error": str(e)
+        }), 400
+    except IntegrityError as e:
+        current_app.logger.error(e)
+        return jsonify({
+            "error": f"Integrity error when check email for userId={userId}",
+            "detail": str(e.orig)
+        }), 400
+    except DatabaseError as e:
+        current_app.logger.error(e)
+        return jsonify({
+            "error": f"Database error when check email for userId={userId}",
+            "detail": str(e.orig)
+        }), 500
+    message = "Verify Email"
+    messageBody = f"This is you OTP {code}" \
+                  "Please take this otp for verify your email for reset " \
+                  "password"
+    html = f"""
+           <html>
+           <body>
+           <h2>Verify Your Email</h2>
+           <p>Please take this otp for verify your email for reset password</p>
+           <p>This is your OTP <strong>{code}</strong>
+           </body>
+           </html>
+"""
+    sendMessage = Message(subject=message,
+                          recipients=[payload['email']],
+                          body=messageBody,
+                          html=html
+                          )
+    mail.send(
+        sendMessage
+    )
+    return jsonify({
+        "message": "Please check your email for get otp"
+    }), 200

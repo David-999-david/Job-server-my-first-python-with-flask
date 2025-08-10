@@ -24,6 +24,12 @@ class Users(db.Model):
         server_default=db.func.now()
     )
 
+    otpcodes = db.relationship(
+        'Otp_Codes',
+        back_populates='users',
+        cascade='all, delete-orphan'
+        )
+
 
 class Job(db.Model):
     __tablename__ = 'job'
@@ -207,4 +213,30 @@ class Job_Worker(db.Model):
     workers = db.relationship(
         'Worker',
         back_populates='job_worker'
+    )
+
+
+class Otp_Codes(db.Model):
+    __tablename__ = 'otp_codes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(UUID(as_uuid=True),
+                        db.ForeignKey('users.id',
+                                      ondelete='cascade'
+                                      ),
+                        nullable=False
+                        )
+    hash_otp = db.Column(bytes, nullable=False)
+    expired_at = db.Column(
+        db.DateTime
+    )
+    used = db.Column(db.Boolean, nullable=False, server_default=False)
+    send_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now()
+    )
+
+    users = db.relationship(
+        'Users',
+        back_populates='otpcodes'
     )

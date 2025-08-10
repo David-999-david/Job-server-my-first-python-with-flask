@@ -6,6 +6,8 @@ from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token
 # from itsdangerous import SignatureExpired, BadSignature
+from app.security.otp import generate_random, hash_code, utcnow
+from datetime import timedelta
 
 
 class AuthService():
@@ -128,5 +130,58 @@ class AuthService():
                 refresh = create_refresh_token(identity=userId)
                 print("[LOGIN] Tokens created successfully")
                 return access, refresh
+        except IntegrityError:
+            raise
+
+    otp_sql = text(
+        '''insert into otp_codes
+           (user_id,hash_otp,expired_at)
+           values
+           (:userId,:hashedOtp,:expiredIn)
+           on conflict (user_id)
+           do update set
+           hash_otp = excluded.hash_otp,
+           expired_at = excluded.expired_at,
+           used = false,
+           send_at = now()
+        '''
+    )
+
+    @staticmethod
+    def check_email(email: str) -> tuple[str, str]:
+
+        check_sql = text(
+            '''
+            select id from users
+            where email = :email
+            limit 1
+            '''
+        )
+
+        try:
+            with db.session.begin():
+                row = db.session.execute(
+                    check_sql,
+                    {"email": email}
+                )
+                if row is None:
+                    raise LookupError(
+                        f'User with email={email} not found!'
+                    )
+                userId = row.mappings().first()['id']
+                code = generate_random()
+                hashed = hash_code(code)
+                expired_in = utcnow() + timedelta(minutes=10)
+                otp_need = {
+                    "userId": userId,
+                    "hashedOtp": hashed,
+                    "expiredIn": expired_in
+                }
+                db.session.execute(
+                    AuthService.otp_sql,
+                    otp_need
+                )
+                return code, userId
+
         except IntegrityError:
             raise

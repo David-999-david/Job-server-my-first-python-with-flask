@@ -65,3 +65,17 @@ class LoginSchema(Schema):
         if "email" in data and isinstance(data['email'], str):
             data['email'] = data['email'].lower()
         return data
+
+
+class EmailOnlySchema(Schema):
+    class Meta:
+        unknown = EXCLUDE
+    email = fields.Email(
+        required=True,
+    )
+
+    @pre_load
+    def strip_normalize(self, data, **kwargs):
+        if isinstance(data['email'], str):
+            data['email'] = data['email'].strip().lower()
+        return data

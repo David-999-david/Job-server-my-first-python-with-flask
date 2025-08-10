@@ -36,6 +36,8 @@ class BaseConfig:
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
     # 60 * 60 * 24 * 14
 
+    OTP_HMAC_SECRET = os.getenv("OTP_HMAC_SECRET")
+
 
 class Development(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")

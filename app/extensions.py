@@ -5,6 +5,8 @@ from itsdangerous import URLSafeTimedSerializer
 # from flask_login import LoginManager
 # from flask_wtf import CSRFProtect
 from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 
 db = SQLAlchemy()
@@ -14,6 +16,9 @@ seralizer: URLSafeTimedSerializer = None
 # login = LoginManager()
 # csrf = CSRFProtect()
 jwt = JWTManager()
+limiter = Limiter(
+    key_func=get_remote_address
+)
 
 
 def init_extensions(app):
@@ -23,6 +28,7 @@ def init_extensions(app):
     # login.init_app(app)
     # csrf.init_app(app)
     jwt.init_app(app)
+    limiter.init_app(app)
 
     global seralizer
     seralizer = URLSafeTimedSerializer(

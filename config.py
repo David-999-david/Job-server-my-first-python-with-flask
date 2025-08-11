@@ -31,7 +31,7 @@ class BaseConfig:
     JWT_SESSION_COOKIE = False
     JWT_COOKIE_CSRF_PROTECT = True
 
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=2)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)
     # 60 * 15
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
     # 60 * 60 * 24 * 14

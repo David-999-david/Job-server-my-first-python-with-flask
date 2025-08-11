@@ -6,6 +6,7 @@ from app.routes.addre_salary import addr_sal_bp
 from app.routes.requirement import requirement_bp
 from app.routes.worker import worker_bp
 from app.routes.user_auth import auth_bp
+from app.routes.tasks import task_bp
 from app.error.error import register_error_handler, register_jwt_error_handler
 
 
@@ -35,5 +36,6 @@ def create_app():
     app.register_blueprint(requirement_bp)
     app.register_blueprint(worker_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(task_bp)
 
     return app

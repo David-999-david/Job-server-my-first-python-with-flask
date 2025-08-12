@@ -5,12 +5,15 @@ from app.schema.tasks import bulk_tasks_schema, taskSchema
 from app.services.tasks import TaskService
 from app.serializers import serizliDict
 from http import HTTPStatus
+from app.security.permission import require_permission
+
 
 task_bp = Blueprint('task', __name__, url_prefix='/task')
 
 
 @task_bp.route('', methods=['POST'])
 @jwt_required()
+@require_permission('worker:create:all')
 def create():
     payload = bulk_tasks_schema(taskSchema).load(
         request.get_json() or {}

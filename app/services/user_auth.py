@@ -66,6 +66,21 @@ class AuthService():
         '''
     )
 
+    role_sql = text(
+        '''select id from roles
+            where name = 'worker'
+        '''
+    )
+
+    user_role_sql = text(
+        '''insert into user_role
+            (user_id, role_id)
+            values
+            (:userId,:roleId)
+            on conflict (user_id,role_id) do nothing
+        '''
+    )
+
     @staticmethod
     def confirm_email(token: str):
         user = extensions.seralizer.loads(token, max_age=3600)
@@ -81,6 +96,15 @@ class AuthService():
                         f'Failed when make user with id{userId}'
                         'for email verified'
                     )
+                roleId = db.session.execute(
+                    AuthService.role_sql
+                ).scalar()
+                if roleId is None:
+                    raise LookupError('Role worker is mssing not found!')
+                db.session.execute(
+                    AuthService.user_role_sql,
+                    {"userId": userId, "roleId": roleId}
+                )
         except IntegrityError:
             raise
 

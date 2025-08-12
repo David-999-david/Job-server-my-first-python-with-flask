@@ -8,6 +8,7 @@ from app.routes.worker import worker_bp
 from app.routes.user_auth import auth_bp
 from app.routes.tasks import task_bp
 from app.routes.worker_task import worker_task_bp
+from app.security.identity import security_bp
 from app.error.error import register_error_handler, register_jwt_error_handler
 
 
@@ -32,6 +33,7 @@ def create_app():
             db.create_all()
             app.logger.info("Successfully connect to Postgres Database")
 
+    app.register_blueprint(security_bp)
     app.register_blueprint(job_bp)
     app.register_blueprint(addr_sal_bp)
     app.register_blueprint(requirement_bp)

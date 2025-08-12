@@ -1,6 +1,6 @@
 from flask import request, jsonify, Blueprint
-from werkzeug.exceptions import BadRequest, NotFound
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# from werkzeug.exceptions import BadRequest, NotFound
+from flask_jwt_extended import jwt_required
 from app.schema.tasks import bulk_tasks_schema, taskSchema
 from app.services.tasks import TaskService
 from app.serializers import serizliDict
@@ -67,3 +67,15 @@ def update(id):
         "success": True,
         "data": serizliDict(dict(result))
     }), HTTPStatus.OK
+
+
+@task_bp.route('', methods=['DELETE'])
+def delete_many():
+    data = request.get_json() or {}
+    ids = data.get('ids')
+    count = TaskService().delete_many(ids)
+    return jsonify({
+        "error": False,
+        "success": True,
+        "data": f"{count} Taks had been delete"
+    })

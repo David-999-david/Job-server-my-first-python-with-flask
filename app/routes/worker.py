@@ -5,6 +5,7 @@ from app.schema.worker import WorkerSchema, JoinJobwithWorkerSchema
 from marshmallow import ValidationError
 from app.services.worker import WorkerService
 from app.serializers import serizliDict
+from flask_jwt_extended import jwt_required
 
 worker_bp = Blueprint('worker', __name__, url_prefix='/workers')
 
@@ -41,11 +42,12 @@ worker_bp = Blueprint('worker', __name__, url_prefix='/workers')
 
 
 @worker_bp.route('', methods=['POST'])
+@jwt_required()
 def insertMany():
     try:
         payload = make_bulk_schema(WorkerSchema).load(request.get_json() or {})
     except ValidationError as e:
-        current_app.logger(e.messages)
+        current_app.logger.warning(e.messages)
         return jsonify({
             "error": e.messages
         }), 400

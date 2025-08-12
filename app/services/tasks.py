@@ -121,3 +121,20 @@ class TaskService():
                 need
             )
             return result.mappings().first()
+    delete_sql = text(
+        '''delete from tasks
+           where id=any(:ids)
+        '''
+    )
+
+    @staticmethod
+    def delete_many(ids: list[int]) -> int:
+        with db.session.begin():
+            res = db.session.execute(
+                TaskService.delete_sql,
+                {"ids": ids}
+            )
+            if res.rowcount == 0:
+                return BadRequest('There is no row for delete')
+            rowcount = res.rowcount
+            return rowcount

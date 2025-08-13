@@ -10,6 +10,7 @@ from app.routes.tasks import task_bp
 from app.routes.worker_task import worker_task_bp
 from app.security.identity import security_bp
 from app.error.error import register_error_handler, register_jwt_error_handler
+from app.routes.cat_sub import cat_bp, sub_bp
 
 
 def create_app():
@@ -41,5 +42,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(task_bp)
     app.register_blueprint(worker_task_bp)
+    app.register_blueprint(cat_bp)
+    app.register_blueprint(sub_bp)
 
     return app

@@ -1,6 +1,6 @@
 from app.extensions import mail, limiter
 from flask import Blueprint, request, jsonify, url_for, current_app
-from flask import make_response
+from flask import make_response, render_template, redirect
 from flask_mail import Message
 # from werkzeug.security import check_password_hash
 from itsdangerous import SignatureExpired, BadSignature
@@ -14,6 +14,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 from flask_jwt_extended import decode_token, get_jwt_identity
 from flask_jwt_extended import jwt_required
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -72,14 +73,16 @@ def confirm_email(token):
         AuthService().confirm_email(token)
     except SignatureExpired as e:
         current_app.logger.warning(e)
-        return jsonify({
-            "error": str(e.message)
-        }), 400
+        deeplink = "htayapp://verify-failed?reason=expired"
+        if urlparse(deeplink).scheme in {"htayapp", "https"}:
+            return redirect(deeplink, code=302)
+        return render_template("verify_failed.html", reason="Expired"), 400
     except BadSignature as e:
         current_app.logger.warning(e)
-        return jsonify({
-            "error": str(e.message)
-        }), 400
+        deeplink = "htayapp://verify-failed?reason=invalid"
+        if urlparse(deeplink).scheme in {"htayapp", "https"}:
+            return redirect(deeplink, code=302)
+        return render_template("verify_failed.html", reason="invalid"), 400
     except LookupError as e:
         current_app.logger.info(e)
         return jsonify({
@@ -97,10 +100,10 @@ def confirm_email(token):
             "error": "Database when verify email",
             "detail": str(e.orig)
         }), 500
-    return jsonify({
-        "error": False,
-        "success": True
-    }), 200
+    deeplink = request.args.get('redirect', "htayapp://verify-success")
+    if urlparse(deeplink).scheme in {"htayapp", "https"}:
+        return redirect(deeplink, code=302)
+    return render_template('verify_success.html'), 200
 
 
 @auth_bp.route('/web/login', methods=['POST'])

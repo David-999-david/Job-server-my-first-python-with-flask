@@ -83,7 +83,7 @@ class AuthService():
 
     @staticmethod
     def confirm_email(token: str):
-        user = extensions.seralizer.loads(token, max_age=3600)
+        user = extensions.seralizer.loads(token, max_age=60)
         userId = user.get('user_id')
         try:
             with db.session.begin():

@@ -75,10 +75,13 @@ def register_jwt_error_handler(jwt, app):
 
     @jwt.invalid_token_loader
     def invalid_token(reason: str):
-        return jsonify(error="Invalid Token", detail=reason), 401
+        current_app.logger.warning(f'JWT missing: {reason}')
+        return jsonify(msg=reason), 401
 
     @jwt.expired_token_loader
     def expired_token(jwt_header, jwt_payload):
+        current_app.logger.warning(
+            f'JWT expired type={jwt_payload.get("type")}')
         return jsonify(
             error="Token Expired",
             token_type=jwt_payload.get("type")

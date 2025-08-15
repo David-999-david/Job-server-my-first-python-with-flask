@@ -31,9 +31,9 @@ class BaseConfig:
     JWT_SESSION_COOKIE = False
     JWT_COOKIE_CSRF_PROTECT = True
 
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     # 60 * 15
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(hours=5)
     # 60 * 60 * 24 * 14
 
     OTP_HMAC_SECRET = os.getenv("OTP_HMAC_SECRET")

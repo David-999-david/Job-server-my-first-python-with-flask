@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from app.extensions import db
-from werkzeug.exceptions import BadRequest
+# from werkzeug.exceptions import BadRequest
 from flask import current_app
 
 
@@ -12,6 +12,18 @@ class category_service():
             on conflict (name) do nothing
             returning *
         '''
+    )
+
+    get_sql = text(
+        '''select * from category'''
+    )
+
+    get_id_sql = text(
+        '''select * from category where id =:id'''
+    )
+
+    get_query_sql = text(
+        '''select * from category where name ilike :query'''
     )
 
     @staticmethod
@@ -28,6 +40,32 @@ class category_service():
                 results.append(result)
             return results
 
+    @staticmethod
+    def get() -> list[dict]:
+        with db.session.begin():
+            results = db.session.execute(
+                category_service.get_sql
+            ).mappings().fetchall()
+            return results
+
+    @staticmethod
+    def get_query(query: str) -> list[dict]:
+        with db.session.begin():
+            results = db.session.execute(
+                category_service.get_query_sql,
+                {"query": f'%{query}%'}
+            ).mappings().fetchall()
+            return results
+
+    @staticmethod
+    def get_id(id: int) -> list[dict]:
+        with db.session.begin():
+            results = db.session.execute(
+                category_service.get_id_sql,
+                {"id": id}
+            ).mappings().fetchall()
+            return results
+
 
 class sub_category_service():
     insert_sql = text(
@@ -38,6 +76,18 @@ class sub_category_service():
             on conflict (name) do nothing
             returning *
         '''
+    )
+
+    get_sql = text(
+        '''select * from sub_category'''
+    )
+
+    get_id_sql = text(
+        '''select * from sub_category where id =:id'''
+    )
+
+    get_query_sql = text(
+        '''select * from sub_category where name ilike :query'''
     )
 
     @staticmethod
@@ -56,4 +106,30 @@ class sub_category_service():
                     current_app.logger.warning(f"on conflict {d.get('name')}")
                     continue
                 results.append(result)
+            return results
+
+    @staticmethod
+    def get() -> list[dict]:
+        with db.session.begin():
+            results = db.session.execute(
+                sub_category_service.get_sql
+            ).mappings().fetchall()
+            return results
+
+    @staticmethod
+    def get_query(query: str) -> list[dict]:
+        with db.session.begin():
+            results = db.session.execute(
+                sub_category_service.get_query_sql,
+                {"query": f'%{query}%'}
+            ).mappings().fetchall()
+            return results
+
+    @staticmethod
+    def get_id(id: int) -> list[dict]:
+        with db.session.begin():
+            results = db.session.execute(
+                sub_category_service.get_id_sql,
+                {"id": id}
+            ).mappings().fetchall()
             return results

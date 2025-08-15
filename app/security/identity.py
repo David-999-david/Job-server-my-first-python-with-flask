@@ -13,7 +13,8 @@ public_endpoint = {
     "auth.login_mobile",
     "auth.check_email",
     "auth.check_otp",
-    "auth.reset_password"
+    "auth.reset_password",
+    "auth.refresh_mobile"
 }
 
 

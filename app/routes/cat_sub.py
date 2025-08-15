@@ -30,6 +30,47 @@ def insert_cat():
     })
 
 
+@cat_bp.route('', defaults={"id": None}, methods=['GET'])
+@cat_bp.route('/<int:id>', methods=['GET'])
+@jwt_required()
+@require_permission('worker:read:all')
+def get(id):
+    query = request.args.get('q', '').strip()
+    if id:
+        results = category_service().get_id(id)
+        categories = [
+            serizliDict(dict(r)) for r in results
+        ]
+        return jsonify({
+            "error": False,
+            "success": True,
+            "data": categories,
+            "counts": len(categories)
+        })
+    elif query:
+        results = category_service().get_query(query)
+        categories = [
+            serizliDict(dict(r)) for r in results
+        ]
+        return jsonify({
+            "error": False,
+            "success": True,
+            "data": categories,
+            "count": len(categories)
+        })
+    else:
+        results = category_service().get()
+        categories = [
+            serizliDict(dict(r)) for r in results
+        ]
+        return jsonify({
+            "error": False,
+            "success": True,
+            "data": categories,
+            "count": len(categories)
+        })
+
+
 sub_bp = Blueprint('sub_category', __name__, url_prefix='/sub-category')
 
 
@@ -47,3 +88,44 @@ def insert_sub():
         "success": True,
         "data": sub_categories
     })
+
+
+@sub_bp.route('', defaults={"id": None}, methods=['GET'])
+@sub_bp.route('/<int:id>', methods=['GET'])
+@jwt_required()
+@require_permission('worker:read:all')
+def get_sub(id):
+    query = request.args.get('q', '').strip()
+    if id:
+        results = sub_category_service().get_id(id)
+        sub_categories = [
+            serizliDict(dict(r)) for r in results
+        ]
+        return jsonify({
+            "error": False,
+            "success": True,
+            "data": sub_categories,
+            "counts": len(sub_categories)
+        })
+    elif query:
+        results = sub_category_service().get_query(query)
+        sub_categories = [
+            serizliDict(dict(r)) for r in results
+        ]
+        return jsonify({
+            "error": False,
+            "success": True,
+            "data": sub_categories,
+            "count": len(sub_categories)
+        })
+    else:
+        results = sub_category_service().get()
+        sub_categories = [
+            serizliDict(dict(r)) for r in results
+        ]
+        return jsonify({
+            "error": False,
+            "success": True,
+            "data": sub_categories,
+            "count": len(sub_categories)
+        })

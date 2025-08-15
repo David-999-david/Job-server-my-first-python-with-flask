@@ -1,4 +1,4 @@
-from flask import g, jsonify
+from flask import g, jsonify, current_app
 from functools import wraps
 
 
@@ -12,6 +12,8 @@ def require_permission(code: str):
             if not userId or perms is None:
                 return jsonify({"error": "Unauthorized"}), 401
             if code not in perms:
+                current_app.logger.warning(
+                    f'{userId} with user no permissions')
                 return jsonify({"error": "User have no permission"}), 403
             return fn(*args, **kwargs)
         return wrapper

@@ -203,7 +203,10 @@ def refresh_web():
 @auth_bp.route('/mobile/refresh', methods=['POST'])
 @jwt_required(refresh=True, locations=['headers'])
 def refresh_mobile():
-    uuid = get_jwt_identity()
+    try:
+        uuid = get_jwt_identity()
+    except Exception as e:
+        current_app.logger.error(f'Jwt error: {str(e)}')
     access = create_access_token(identity=uuid)
     refresh = create_refresh_token(identity=uuid)
 
@@ -212,7 +215,7 @@ def refresh_mobile():
         "success": True,
         "newAccess": access,
         "newRefresh": refresh
-    })
+    }), 201
 
 
 @auth_bp.route('/check-email', methods=['POST'])

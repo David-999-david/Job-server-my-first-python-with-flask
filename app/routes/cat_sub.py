@@ -2,12 +2,17 @@ from flask import request, jsonify, Blueprint
 from app.schema.cat_sub import (
     bulk_items_schema,
     category_schema,
-    sub_category_schema
+    sub_category_schema,
+    ProjectSchema
 )
-from app.services.cat_sub import category_service, sub_category_service
+from app.services.cat_sub import (
+    category_service, sub_category_service,
+    ProjectService
+    )
+from werkzeug.datastructures import FileStorage
 from app.serializers import serizliDict
 from app.security.permission import require_permission
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 cat_bp = Blueprint('category', __name__, url_prefix='/category')
 
@@ -129,3 +134,38 @@ def get_sub(id):
             "data": sub_categories,
             "count": len(sub_categories)
         })
+
+
+project_bp = Blueprint('project', __name__, url_prefix='/project')
+
+
+@project_bp.route('', methods=['POST'])
+@jwt_required()
+def insert():
+    userId = get_jwt_identity()
+    data = {
+        "title": request.form.get('title'),
+        "description": request.form.get('description'),
+        "sub_id": request.form.get('sub_id')
+    }
+    payload = ProjectSchema().load(data)
+
+    file: FileStorage | None = request.files['file']
+
+    if not file or not file.filename:
+        return jsonify(
+            {"error": True, "detail": "Missing file in insert project"})
+
+    mime = (file.mimetype or '').lower()
+
+    file_data = file.read()
+
+    result = ProjectService().insert(userId, payload, file_data, mime)
+
+    project = serizliDict(dict(result))
+
+    return jsonify({
+        "error": False,
+        "success": True,
+        "data": project
+    }), 201

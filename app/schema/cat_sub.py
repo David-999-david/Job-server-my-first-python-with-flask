@@ -61,3 +61,29 @@ class TaskSchema(Schema):
     image_url = fields.String(
         required=True
     )
+
+
+class ProjectSchema(Schema):
+
+    class Meta:
+        unknown = EXCLUDE
+
+    title = fields.String(
+        required=True,
+        validate=validate.Length(min=1)
+    )
+    description = fields.String(
+        required=True,
+        validate=validate.Length(min=1)
+    )
+    sub_id = fields.Integer(
+        required=True,
+        validate=validate.Range(min=1)
+    )
+
+    @pre_load
+    def strip_normazlie(self, data, **kwargs):
+        for k in ("title", "description"):
+            if k in data and isinstance(data.get(k), str):
+                data[k] = data[k].strip()
+        return data

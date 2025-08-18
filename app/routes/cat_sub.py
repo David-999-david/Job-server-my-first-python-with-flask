@@ -150,22 +150,25 @@ def insert():
     }
     payload = ProjectSchema().load(data)
 
-    file: FileStorage | None = request.files['file']
+    file: FileStorage | None = request.files.get('file')
 
-    if not file or not file.filename:
-        return jsonify(
-            {"error": True, "detail": "Missing file in insert project"})
+    if file and file.filename:
 
-    mime = (file.mimetype or '').lower()
+        mime = (file.mimetype or '').lower()
 
-    file_data = file.read()
+        file_data = file.read()
 
-    result = ProjectService().insert(userId, payload, file_data, mime)
+        result = ProjectService().insert_with_image(
+            userId, payload, file_data, mime)
+        project = serizliDict(dict(result))
 
-    project = serizliDict(dict(result))
+    else:
+        result = ProjectService().insert(payload)
+
+        project = serizliDict(dict(result))
 
     return jsonify({
-        "error": False,
-        "success": True,
-        "data": project
+            "error": False,
+            "success": True,
+            "data": project
     }), 201

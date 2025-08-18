@@ -212,7 +212,7 @@ class ProjectService:
 
         return storage_path, url
 
-    def insert(
+    def insert_with_image(
             self, userId: str, data: dict,
             file_data: bytes, mime: str) -> dict:
         if mime not in self.allow_mime:
@@ -277,4 +277,17 @@ class ProjectService:
                 raise BadRequest(
                     f'Could not re-fetch project with id={projectId}'
                 )
+            return result
+
+    def insert(self, data: dict) -> dict:
+        with db.session.begin():
+            result = db.session.execute(
+                self.project_insert,
+                {
+                    "title": data.get('title'),
+                    "description": data.get('description')
+                }
+            ).mappings().first()
+            if not result:
+                raise BadRequest("Failed when insert project with no image")
             return result
